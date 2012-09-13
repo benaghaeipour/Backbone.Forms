@@ -1,0 +1,41 @@
+@appFonts:                "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+@defaultBoxShadow:        0 0 10px -1px black;
+@defaultBorderRadius:     5px 5px 5px 5px;
+@defaultBoxSizing:        border-box;
+@defaultBoxGradient:      #999;
+@defaultBoxGradientFrom:  #ececec;
+@defaultBoxGradientTo:    #c4c4c4;
+
+
+
+.BoxSizing(@boxSizing:@defaultBoxSizing) {
+  -moz-box-sizing: @boxSizing;
+  -webkit-box-sizing: @boxSizing;
+  -ms-box-sizing: @boxSizing;
+  box-sizing: @boxSizing;
+}
+
+
+
+.BoxShadow(@boxShadow:@defaultBoxShadow) {
+  -moz-box-shadow: @boxShadow;
+  -webkit-box-shadow: @boxShadow;
+  box-shadow: @boxShadow;
+}
+
+.BorderRadius(@borderRadius:@defaultBorderRadius) {
+  -webkit-border-radius: @borderRadius;
+  -moz-border-radius: @borderRadius;
+  border-radius: @borderRadius;
+}
+
+
+
+.BoxGradient(@boxGradient:@defaultBoxGradient, @boxGradientFrom:@defaultBoxGradientFrom, @boxGradientTo:@defaultBoxGradientTo) {
+  background: @boxGradient; 
+  //filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)", @boxGradientFrom, @boxGradientTo));
+  background: -webkit-gradient(linear, left top, left bottom, from(@boxGradientFrom), to(@boxGradientTo));
+  background: -moz-linear-gradient(top,  @boxGradientFrom,  @boxGradientTo);
+}
+
