@@ -1,4 +1,4 @@
-var Backbone_Forms = require('../lib/Backbone.Forms.js');
+var backbone_forms = require('../lib/backbone.forms.js');
 
 /*
   ======== A Handy Little Nodeunit Reference ========
@@ -28,7 +28,7 @@ exports['awesome'] = {
   'no args': function(test) {
     test.expect(1);
     // tests here
-    test.equal(Backbone_Forms.awesome(), 'awesome', 'should be awesome.');
+    test.equal(backbone_forms.awesome(), 'awesome', 'should be awesome.');
     test.done();
   }
 };
