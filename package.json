@@ -32,5 +32,5 @@
     "grunt-contrib": "~0.2.0",
     "grunt-requirejs": "~0.2.10"
   },
-  "keywords": [],
+  "keywords": []
 }

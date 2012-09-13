@@ -16,6 +16,7 @@ require.config({
     , 'Handlebars'            : 'lib/Handlebars'
     , 'backbone'              : 'lib/backbone'
     , 'backbone.marionette'   : 'lib/backbone.marionette'
+    , 'backbone.forms'        : 'lib/backbone.forms'
     , 'backbone.validation'   : 'lib/backbone.validation'
     , 'backbone.modelbinder'  : 'lib/backbone.modelbinder' 
     , 'marionetteHandlebars'  : 'lib/backbone.marionette.handlebars'
