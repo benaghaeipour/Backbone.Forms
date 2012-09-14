@@ -48,30 +48,31 @@ return Backbone.Forms;
  * TestModel
  */
 
-define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'backbone.forms', 'handlebars'],
+define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'backbone.forms', 'marionetteHandlebars'],
 function ($, _, Backbone, Marionette, Forms, Handlebars) {
 
-  var TestModel;
+  var BBF_FormModel;
 
-  TestModel = Backbone.Model.extend({
+  BBF_FormModel = Backbone.Model.extend({
     
   });
 
   /** Exposing the model publicly from the module. */
-  return TestModel;
+  return BBF_FormModel;
 });
 /**
  * TestModel View
  */
-define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'marionetteHandlebars', 'hbs!templates/backbone_forms/form'],
-function ($, _, Backbone, Marionette, MarionetteHandlebars, tpl) {
+define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'marionetteHandlebars', 'backbone.forms', 'hbs!templates/backbone_forms/form'],
+function ($, _, Backbone, Marionette, Handlebars, Forms, tpl) {
 
-  var CheckView;
+  var BBF_FormView;
 
-  CheckView = Marionette.ItemView.extend({
+  BBF_FormView = Marionette.ItemView.extend({
 
     /** View's container DOM element CSS class **/
-    className: 'check',
+    className: 'form',
+    tagName: 'form',
     /**
      * Wires up the template used to render the view
      * @type {Object}
@@ -101,5 +102,5 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, tpl) {
   });
 
   /** Exposing the view publicly from the module. */
-  return CheckView;
+  return BBF_FormView;
 });

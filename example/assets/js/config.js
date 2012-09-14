@@ -1,24 +1,22 @@
 /**
  * Sets up Require.js configuration for the application:
- * @author  Tomislav Capan
  */
 
 require.config({
 
-  // Initialize the application main module or test runner
-  // (a clever test detection trick picked up from srchr-demo => https://github.com/rmurphey/srchr-demo/blob/master/app/config.js )
+  // Initialize the application main module
   deps: ['main'],
 
   // Configuring libraries aliases /shortcuts/
   paths: {
       'jquery'                : 'lib/jquery.min'
     , 'underscore'            : 'lib/underscore'
-    , 'Handlebars'            : 'lib/Handlebars'
+    , 'handlebars'            : 'lib/handlebars'
     , 'backbone'              : 'lib/backbone'
     , 'backbone.marionette'   : 'lib/backbone.marionette'
     , 'backbone.forms'        : 'lib/backbone.forms'
     , 'backbone.validation'   : 'lib/backbone.validation'
-    , 'backbone.modelbinder'  : 'lib/backbone.modelbinder' 
+    , 'backbone.modelbinder'  : 'lib/backbone.modelbinder'
     , 'marionetteHandlebars'  : 'lib/backbone.marionette.handlebars'
     , 'hbs'                   : 'lib/hbs'
     , 'templates'             : '../templates'
@@ -41,7 +39,7 @@ require.config({
         deps    : ['underscore', 'jquery']
       , exports : 'Backbone'
     },
-    'marionette' : {
+    'backbone.marionette' : {
         deps    : ['backbone']
       , exports : 'Backbone.Marionette'
     },
@@ -50,6 +48,7 @@ require.config({
       , exports : 'jquery'
     }
   }
+
 });
 
 require(['jquery', 'jquery.bootstrap'], function($) {});

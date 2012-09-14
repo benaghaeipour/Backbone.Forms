@@ -2,21 +2,28 @@
 define(['jquery', 'underscore', 'backbone', 'backbone.marionette'],
 function ($, _, Backbone, Marionette) {
 
-  var bbf = new Backbone.Marionette.Application()
+  var bbfApp = new Backbone.Marionette.Application();
 
    // setting up display regions
 
-  bbf.addRegions({
+  bbfApp.addRegions({
     container: '#container'
   });
 
-  bbf.on('start', function(options){
+  bbfApp.on('start', function(options){
+
     options = (options || {});
 
-    //bootstrap app
+    options.layout.bootstrap();
+    options.router.bootstrap();
+    
+    // _.each(options.subAppsModules.bbfModules, function(subAppModule) {
+
+    //   subAppModule.bootstrap();
+    // });
 
     Backbone.history.start();
   });
 
-  return bbf
-} 
+  return bbfApp;
+});

@@ -7,30 +7,17 @@
     "name": "Benjamin Aghaeipour",
     "email": "benjamin@aghaeipour.co.uk"
   },
-  "repository": {
-    "type": "git",
-    "url": "none"
-  },
-  "bugs": {
-    "url": ""
-  },
   "licenses": [
     {
       "type": "MIT",
       "url": "/blob/master/LICENSE-MIT"
     }
   ],
-  "main": "lib/Backbone.Forms",
-  "engines": {
-    "node": ">= 0.8"
-  },
-  "scripts": {
-    "test": "grunt test"
-  },
   "devDependencies": {
-    "grunt": "~0.3.11",
-    "grunt-contrib": "~0.2.0",
-    "grunt-requirejs": "~0.2.10"
+    "grunt"           : "~0.3.12"
+    , "grunt-contrib"   : "~0.1.4"
+    , "grunt-requirejs" : "~0.2.9"
+    , "grunt-replace"   : "*"
   },
   "keywords": []
 }

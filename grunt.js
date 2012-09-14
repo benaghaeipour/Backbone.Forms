@@ -14,15 +14,17 @@ module.exports = function(grunt) {
               '// Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>\n' +
               '// Distributed under MIT License\n'
     },
+
     // Configuration for javascript build process.Options apply from r.js
     // see https://github.com/jrburke/r.js/blob/master/build/example.build.js
-    requirejs: {
-      mainConfigFile  : "example/assets/js/config.js",  /* Include the main configuration file */
-      out             : "example/temp/application.js",  /* Output file */
-      name            : "config",                       /* Root application module */
-      wrap            : false,                          /* Do not wrap everything in an IIFE */
-      optimize        : "none",                         /* JS-optimization on build: 'none' or 'uglify' supported via Node */
-      insertRequire   : ['main']
+    requirejs: { 
+
+      mainConfigFile    : "example/assets/js/config.js"   /* Include the main configuration file */
+      , out             : "example/temp/application.js"   /* Output file */
+      , name            : "config"                        /* Root application module */
+      , wrap            : false                           /* Do not wrap everything in an IIFE */
+      , optimize        : "none"                          /* JS-optimization on build: 'none' or 'uglify' supported via Node */
+      , insertRequire   : ['main']
     },
 
     // The concatenate task merges require.js/almond and other dependencies (templates) into the application code.
@@ -33,11 +35,11 @@ module.exports = function(grunt) {
       },
       amd: {
           src: ['<banner>', 'src/amd-intro.jsnip', 'src/backbone.forms.js', 'src/amd-outro.jsnip','src/models/**/*.js', 'src/views/**/*.js']
-        , dest: 'dist/<%= pkg.name %>-amd.js'
+        , dest: 'dist/backbone.forms.js'
       },
       app: {
           src: ['example/assets/js/lib/almond.js', 'example/temp/application.js']
-        , dest: "example/assets/js/application.js"
+        , dest: "example/application.js"
         , separator: ";"
       }
     },
@@ -48,7 +50,7 @@ module.exports = function(grunt) {
     },
 
     less: {
-      debug: {
+      app: {
         options: {
           paths: ['example/assets/less']
         },
@@ -66,18 +68,19 @@ module.exports = function(grunt) {
       },
       app: {
         files: {
-          'example/assets/js/lib/' : 'dist/<%= pkg.name %>-amd.js'
+          'example/assets/js/lib/' : 'dist/backbone.forms.js'
         }
       }
     },
 
     lint: {
-      files: ['grunt.js', 'test/**/*.js', 'dist/**/*.js']
+      debug: ['grunt.js', 'test/**/*.js', 'dist/**/*.js']
+      , app: ['example/assets/js/**/*.js']
     },
 
     watch: {
-        files: '<config:lint.files>'
-      , tasks: 'default'
+        files: ['<config:lint.debug>', 'src/**/*.js', 'example/assets/js/**/*.js']
+      , tasks: 'app'
     },
 
     jshint: {
@@ -108,8 +111,6 @@ module.exports = function(grunt) {
       globals: {
           exports   : true
         , define    : true
-        , Backbone  : true
-        , _         : true
       }
 
     }
@@ -119,10 +120,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-requirejs');
   grunt.loadNpmTasks('grunt-replace');
 
-  grunt.registerTask('moduleBuild', 'clean:debug concat:amd lint');
+  grunt.registerTask('moduleBuild', 'clean:debug concat:amd lint:debug');
 
-  grunt.registerTask('app', 'moduleBuild clean:app copy:app requirejs concat:app copy:templates less:debug');
+  grunt.registerTask('app', 'moduleBuild clean:app copy:app copy:templates requirejs concat:app less:app');
   // Default task.
-  grunt.registerTask('default', 'moduleBuild');
+  grunt.registerTask('default', 'app watch');
 
 };

@@ -2,8 +2,8 @@
  * TestModel
  */
 
-define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'backbone.forms', 'handlebars'],
-function ($, _, Backbone, Marionette, Forms, Handlebars) {
+define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'backbone.forms', 'marionetteHandlebars'],
+function ($, _, Backbone, Marionette, Forms, MarionetteHandlebars) {
 
   var TestModel;
 

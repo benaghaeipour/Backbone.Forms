@@ -1,8 +1,8 @@
 /**
  * TestModel View
  */
-define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'handlebars', 'hbs!templates/backbone_forms/form'],
-function ($, _, Backbone, Marionette, Handlebars, tpl) {
+define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'marionetteHandlebars', 'hbs!templates/backbone_forms/form'],
+function ($, _, Backbone, Marionette, MarionetteHandlebars, tpl) {
 
   var TestView;
 
