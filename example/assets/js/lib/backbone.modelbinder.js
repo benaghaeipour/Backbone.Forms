@@ -67,7 +67,7 @@
     // Converts the input bindings, which might just be empty or strings, to binding objects
     _initializeAttributeBindings:function () {
         var attributeBindingKey, inputBinding, attributeBinding, elementBindingCount, elementBinding;
-
+        debugger;
         for (attributeBindingKey in this._attributeBindings) {
             inputBinding = this._attributeBindings[attributeBindingKey];
 

@@ -15,11 +15,13 @@ require.config({
     , 'backbone'              : 'lib/backbone'
     , 'backbone.marionette'   : 'lib/backbone.marionette'
     , 'backbone.forms'        : 'lib/backbone.forms'
-    , 'backbone.validation'   : 'lib/backbone.validation'
-    , 'backbone.modelbinder'  : 'lib/backbone.modelbinder'
+    , 'backbone.validation'   : '../../../../Backbone.Validation/src/backbone.validation'
+    , 'backbone.modelbinder'  : '../../../../Backbone.ModelBinder/src/backbone.modelbinder'
     , 'marionetteHandlebars'  : 'lib/backbone.marionette.handlebars'
     , 'hbs'                   : 'lib/hbs'
     , 'templates'             : '../templates'
+    , 'PersonalDataOptions'   : 'constants/PersonalDataOptions'
+    , 'bbfTemplates'          : '../templates/backbone_forms'
     , 'jquery.bootstrap'      : 'lib/bootstrap.min' // Twitter Bootstrap + RequireJS -- https://github.com/twitter/bootstrap/pull/534#issuecomment-6438820
   },
 

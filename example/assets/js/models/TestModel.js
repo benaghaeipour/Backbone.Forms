@@ -8,7 +8,6 @@ function ($, _, Backbone, Marionette, Forms, MarionetteHandlebars) {
   var TestModel;
 
   TestModel = Backbone.Model.extend({
-    
   });
 
   /** Exposing the model publicly from the module. */

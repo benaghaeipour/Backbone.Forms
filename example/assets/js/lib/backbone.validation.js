@@ -193,7 +193,8 @@ Backbone.Validation = (function(_){
 
     // Helper to mix in validation on a model
     var bindModel = function(view, model, options) {
-      _.extend(model, mixin(view, options));
+        _.extend(model, mixin(view, options));
+
     };
 
     // Removes the methods added to a model

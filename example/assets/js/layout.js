@@ -42,9 +42,7 @@ define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'marionetteHa
     },
 
     showTest: function (options) {
-      console.log('hi');
       var testView = new TestView(options);
-
       this.bbfContent.show(testView);
       //bbfApp.container.show(testView);
     }

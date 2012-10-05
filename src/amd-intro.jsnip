@@ -1,7 +1,8 @@
+
 (function (factory) {
   if (typeof exports === 'object') {
-    module.exports = factory(require('backbone'), require('underscore'));
+    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.modelbinder'));
   } else if (typeof define === 'function' && define.amd) {
-    define(['backbone', 'underscore'], factory);
+    define(['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.modelbinder'], factory);
   }
-}(function (Backbone, _) {
+}(function ($, _, Backbone, Handlebars, Validation, ModelBinder) {

@@ -34,7 +34,7 @@ module.exports = function(grunt) {
         , dest: 'dist/<%= pkg.name %>.js'
       },
       amd: {
-          src: ['<banner>', 'src/amd-intro.jsnip', 'src/backbone.forms.js', 'src/amd-outro.jsnip','src/models/**/*.js', 'src/views/**/*.js']
+          src: ['<banner>', 'src/amd-intro.jsnip', 'src/backbone.forms.js','src/models/**/*.js', 'src/views/**/*.js', 'src/amd-outro.jsnip']
         , dest: 'dist/backbone.forms.js'
       },
       app: {
@@ -79,7 +79,7 @@ module.exports = function(grunt) {
     },
 
     watch: {
-        files: ['<config:lint.debug>', 'src/**/*.js', 'example/assets/js/**/*.js']
+        files: ['<config:lint.debug>', 'src/**/*.js', 'example/assets/js/**/*.js', '../Backbone.ModelBinder/src/*.js', '../Backbone.Validation/src/*.js']
       , tasks: 'app'
     },
 
@@ -106,6 +106,8 @@ module.exports = function(grunt) {
         , camelCase : true        // variable naming check for consistency
         , bitwise   : true        // disallows bitwise operators (see jsHint docs why; override per-file if needed)
         , quotmark  : 'single'    // quotation marks consistency (not forcing a particular style at the moment, might in the future)
+        , multistr  : true
+
       },
 
       globals: {

@@ -1,6 +1,6 @@
 
-define(['jquery', 'underscore', 'backbone', 'backbone.marionette'],
-function ($, _, Backbone, Marionette) {
+define(['jquery', 'underscore', 'backbone', 'backbone.marionette', 'backbone.forms'],
+function ($, _, Backbone, Marionette, Forms) {
 
   var bbfApp = new Backbone.Marionette.Application();
 
