@@ -9,20 +9,20 @@ require.config({
 
   // Configuring libraries aliases /shortcuts/
   paths: {
-      'jquery'                : 'lib/jquery.min'
-    , 'underscore'            : 'lib/underscore'
-    , 'handlebars'            : 'lib/handlebars'
-    , 'backbone'              : 'lib/backbone'
-    , 'backbone.marionette'   : 'lib/backbone.marionette'
-    , 'backbone.forms'        : 'lib/backbone.forms'
-    , 'backbone.validation'   : 'lib/backbone.validation'
-    , 'backbone.modelbinder'  : 'lib/backbone.modelbinder'
-    , 'marionetteHandlebars'  : 'lib/backbone.marionette.handlebars'
-    , 'hbs'                   : 'lib/hbs'
-    , 'templates'             : '../templates'
-    , 'PersonalDataOptions'   : 'constants/PersonalDataOptions'
-    , 'bbfTemplates'          : '../templates/backbone_forms'
-    , 'jquery.bootstrap'      : 'lib/bootstrap.min' // Twitter Bootstrap + RequireJS -- https://github.com/twitter/bootstrap/pull/534#issuecomment-6438820
+      'jquery'                          : 'lib/jquery.min'
+    , 'underscore'                      : 'lib/underscore'
+    , 'handlebars'                      : 'lib/handlebars'
+    , 'backbone'                        : 'lib/backbone'
+    , 'backbone.marionette'             : 'lib/backbone.marionette'
+    , 'backbone.forms'                  : 'lib/backbone.forms'
+    , 'backbone.validation'             : 'lib/backbone.validation'
+    , 'backbone.structuredmodelbinder'  : '../../../../Backbone.StructuredModelBinder/src/backbone.structuredmodelbinder'
+    , 'marionetteHandlebars'            : 'lib/backbone.marionette.handlebars'
+    , 'hbs'                             : 'lib/hbs'
+    , 'templates'                       : '../templates'
+    , 'PersonalDataOptions'             : 'constants/PersonalDataOptions'
+    , 'bbfTemplates'                    : '../templates/backbone_forms'
+    , 'jquery.bootstrap'                : 'lib/bootstrap.min' // Twitter Bootstrap + RequireJS -- https://github.com/twitter/bootstrap/pull/534#issuecomment-6438820
   },
 
   // configuring require.js handlebars plugin

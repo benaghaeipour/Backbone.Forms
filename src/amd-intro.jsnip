@@ -1,8 +1,8 @@
 
 (function (factory) {
   if (typeof exports === 'object') {
-    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.modelbinder'));
+    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.structuredmodelbinder'));
   } else if (typeof define === 'function' && define.amd) {
-    define(['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.modelbinder'], factory);
+    define(['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.structuredmodelbinder'], factory);
   }
-}(function ($, _, Backbone, Handlebars, Validation, ModelBinder) {
+}(function ($, _, Backbone, Handlebars, Validation, StructuredModelBinder) {

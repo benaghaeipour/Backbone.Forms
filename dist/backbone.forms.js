@@ -7,202 +7,246 @@
 
 (function (factory) {
   if (typeof exports === 'object') {
-    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.modelbinder'));
+    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.structuredmodelbinder'));
   } else if (typeof define === 'function' && define.amd) {
-    define(['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.modelbinder'], factory);
+    define(['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.structuredmodelbinder'], factory);
   }
-}(function ($, _, Backbone, Handlebars, Validation, ModelBinder) {
+}(function ($, _, Backbone, Handlebars, Validation, StructuredModelBinder) {
 /*jshint debug:true */
 
-// Form model binding and validation.
+// Forms model binding and validation.
+Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBinder){
 
-Backbone.Forms = (function($, _, Backbone, Handlebars, Validation, ModelBinder){
-  'use strict';
-
-  var Forms, defaultValidation, defaultModelBinder, defaultTemplates, defaultOptions = {
-    forceUpdate: true,
-    selector: 'name',
-    labelFormatter: 'sentenceCase',
-    valid: function(view, attr, selector){
-      console.log('valid');
-    },
-    invalid: function(view, attr, error, selector){
-      console.log('not valid');
-    }
+  var Forms = {};
+  
+  //Forms
+  Forms = function(options){
+    this.defaultOptions = options || {};
   };
+  _.extend(Forms, {
+    //Objects
+    Helpers: {},
+    Templates: {},
+    Validation: {},
+    ModelBinder: {},
+    
+    //Functions
+    build: function(view, model, options){
 
-  Forms = (function(){
+      var that = this
+        , events = {}
+        , compiledForm
+        , forms
+      ;
 
-    //Public functions
-    var bindModel, unbindModel, eventsCollection, uiCollection, validationCollection, bindingsCollection,
-    //Private functions
-    _getForms, _getControls, _getEvents, _getValidation, _modelBinder, _getinput;
+      view = view || this._view;
+      model = model || this._model;
+      options = options || this._options;
+      forms = view.forms || {};
 
-    _getForms = function(view, model, options){
-
-      var events = {}, compiledForm, forms = view.forms ? view.forms || {} : {};
-      eventsCollection = {};
-      validationCollection ={};
-      uiCollection = {};
-      bindingsCollection = {};
-      // console.log(Forms.Templates.form);
-      // compiledForm = Forms.Templates.compile(Forms.Templates.form);
-      // console.log(compiledForm({formfields : 'hi'}));
-
-      _.each(forms, function(form, formId){
-        //var formModel, formView;
-        var formView, options;
- 
-        options = Forms.Templates.Elements.form(form, formId);
-
-        bindingsCollection[formId] = {
-          selector: options.id,
-          bindings: {}
-        };
+      _.each(forms, function(form, formName){
+        var tmplParams = Forms.Templates.Elements.form(form, formName);
+        tmplParams.id = formName;
 
         if(form.controls){
-          options.fields = _getControls(form.controls, view, bindingsCollection[formId], form);
+          that._addBindingsCollection('#' + tmplParams.id, [formName], false);
+          tmplParams.controls = that._getControls(form.controls, [formName]);
         }
-
-        formView = Forms.Templates.form(options);
 
         //Get events
-        if(form.events){
-          _getEvents(options.id, form.events);
-        }
+        that._getEvents(form, formName);
 
-        $.extend(view.model, {validation : validationCollection});
-
+        $.extend(view.model, {validation : that._validationCollection});
+        
         view.on('render', function() {
 
-          $(view.el).find('#' + formId + '_container').append(formView);
-          //Events can only be bound when template has been rendered
+          $(view.el).find('#' + formName + '_container').append(Forms.Templates.form(tmplParams));
 
-          view.delegateEvents(eventsCollection);
-          _modelBinder.bind(view.model, view.el, uiCollection);
+          //Events can only be bound when template has been rendered
+          view.delegateEvents(that._eventsCollection);
+
+          Forms.ModelBinder.bind(view.model, view.el, that._bindingsCollection);
+          debugger;
         });
       });
-    };
+    },
+    
+    _addBindingsCollection: function(selector, objPath, ignore){
+      var objPathClone = objPath.slice(0), obj = this.Helpers.getPath(this._bindingsCollection, objPathClone);
+      _.extend(obj, { selector: selector, bindings: {}, ignore: ignore || false});
+    },
 
-    _getControls = function(controls, view, bindings, parentControl){
-      var html = "", events, options, controlView, obj;
+    _addBindingsValue: function(selector, value, objPath, ignore){
+      var objPathClone = objPath.slice(0), obj = this.Helpers.getPath(this._bindingsCollection, objPathClone);
+      _.extend(obj, { selector: selector, value: value, ignore: ignore || false});
+    },
 
-      _.each(controls, function(control, controlId){
-        obj = {};
-        controlView = null;
+    _getControls: function(controls, parents){
+      var that = this
+        , view = this._view
+        , html = ""
+      ;
+
+      _.each(controls, function(control, controlName){
+        var controlView
+          , tmplParams
+          , _parents =  parents.slice(0)
+        ;
 
         if(Forms.Templates[control.type]){
           console.log('adding ' + control.type);
 
-          options = Forms.Templates.Elements[control.type](control, controlId, view);
+          tmplParams = Forms.Templates.Elements[control.type](control, controlName);
+          tmplParams.id = that.Helpers.underscoreArray(_parents) + controlName;
 
-          if(control.multiple){
-            debugger;
-          }
+          _parents.push(controlName);
 
           if(control.controls){
-            options.fields = _getControls(control.controls, view, control);
+            that._addBindingsCollection('#' + tmplParams.id, _parents, control.modelIgnore);
+            tmplParams.controls = that._getControls(control.controls, _parents);
+          }else{
+            that._addBindingsValue('#' + tmplParams.id, tmplParams.value, _parents, control.modelIgnore);
           }
 
-          if(control.events){
-            _getEvents(options.id, control.events);
-          }
+          that._getEvents(control, tmplParams.id);
+          that._getValidation(control, controlName, parents);
 
-          if(control.validation && !control.modelIgnore){
-            _getValidation(controlId, control.validation);
-          }
+          controlView = Forms.Templates[control.type](tmplParams);
 
-          if (options.inputs) {
-            _.each(options.inputs, function(input, inputId){
-              obj[controlId + '_' + input] = '#' + options.inputs[input].id;
-            });
-          }
-          else{
-            obj[controlId] = '#' + options.id;
-          }
-          
-          if(!control.modelIgnore){
-            $.extend(uiCollection, obj);
-          } 
-
-          controlView = Forms.Templates[control.type](options);
-        }
-
-        html += controlView;
+          html += controlView;
+        }        
       });
 
       return html;
-    };
+    },
 
-    _getEvents = function(controlId, events){
-      var obj;
-      _.each(events, function(methodToCall, eventAttribute){
-        obj = {};
-        obj[eventAttribute + ' #' + controlId] = methodToCall;
-        $.extend(eventsCollection, obj);
-      });
-    };
-
-    _getValidation = function(controlId, validation){
-      var obj = {};
-      obj[controlId] = validation;
-      $.extend(validationCollection, obj);
-    };
-
-    //Returns public methods of Backbone.Forms
-    return {
-
-      //Current version of the library
-      version: '0.1.0',
-      bind: function(view, options){
-
-        var model = view.model;
-
-        if(typeof model === 'undefined'){
-          throw 'Before you execute the binding your view must have a model\n';
-        }
-
-        if(!Forms.Templates.form){
-          throw "Templates not loaded";
-        }
-
-        this.unbind(view, model);
-        console.log('binding');
-
-        options = $.extend({}, defaultOptions, options);
-        _modelBinder = new Forms.ModelBinder();
-
-        _getForms(view, view.model, options);
-
-        defaultValidation = Forms.Validation;
-        defaultValidation.bind(view, options);
-      },
-
-      unbind: function(view, model){
-        console.log('unbinding');
+    _getEvents: function(control, controlName){
+      var that = this;
+      if(control.events){
+        _.each(control.events, function(methodToCall, eventAttribute){
+          var obj = {};
+          obj[eventAttribute + ' #' + controlName] = methodToCall;
+          _.extend(that._eventsCollection, obj);
+        });
       }
-    };
-  }());
+    },
 
-  Forms.Templates = {
-    registerTemplates : function(templates){
+    _getValidation: function(control, controlName, controlPath){
+      if(control.validation && !control.modelIgnore){
+        debugger;
+        var obj = {};
+        obj[controlName] = control.validation;
+        _.extend(this._validationCollection, obj);
+      }
+    },
+
+    init: function(){
+      console.log('initialise');
+      
+      //Adds the defaults templates to the BB.Forms
+      Forms.Templates.init(); 
+      
+      //Then checks they are there
+      if(!Forms.Templates.form){  
+        throw "Templates not loaded";
+      }
+    },
+
+    bind: function(view, options){
+      var model = view.model;
+
+      if(typeof model === 'undefined'){
+        throw 'Before you execute the binding your view must have a model\n';
+      }
+
+      this.unbind();
+      //Save view, model, and options on BB.Forms
+      this._view = view;
+      this._model = model;
+      this._options = options;
+
+      //Create BB.Forms collections 
+      this._eventsCollection = {};
+      this._validationCollection ={};
+      this._bindingsCollection = {};
+
+      this.build();
+
+      //Bind the validation events to the model
+      this.Validation.bind(view, options);
+    },
+
+    unbind: function(){
+      //unbind using this._view and this._model
+      console.log('unbinding');
+    }
+  });
+
+  //Form Helpers
+  _.extend(Forms.Helpers, {
+    getPath: function(objectModel, dotAttrs){
+      var key = dotAttrs[0];
+      
+      if(objectModel[key] && dotAttrs.length > 1 && _.isObject(objectModel[key])){
+        dotAttrs.splice(0, 1);
+        return this.getPath(objectModel[key], dotAttrs);
+      }else if(!objectModel[key] && objectModel.bindings){
+        return this.getPath(objectModel.bindings, dotAttrs);
+      }else if(!objectModel[key]){
+        objectModel[key] = {};
+        return this.getPath(objectModel, dotAttrs);
+      }else{
+        return objectModel[key];
+      }
+    },
+    underscoreArray: function(array){
+      var underscores = "";
+      _.each(array, function(controlName){
+        underscores += controlName + '_';
+      });
+      return underscores;
+    }
+  });
+
+  //Templates
+  _.extend(Forms.Templates, {
+    //Objects
+    Helpers: {},
+    Partials: {},
+    Elements: {},
+
+    //Functions
+    registerTemplates: function(templates){
       _.each(templates, function(template, templateName){
         Forms.Templates.Helpers.createTemplate(templateName, template);
       });
     },
-    registerHelpers : function(helpers){
+    registerHelpers: function(helpers){
       _.each(helpers, function(helper, helperName){
         Forms.Templates.Helpers.createHelper(helperName, helper);
       });
     },
-    registerPartials : function(partials){
+    registerPartials: function(partials){
       _.each(partials, function(partial, partialName){
         Forms.Templates.Helpers.createPartial(partialName, partial);
       });
+    },
+    init: function(){
+      this.registerTemplates({
+          form                  : '<form{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{controls}}}</form>'
+        , fieldset              : '<fieldset{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{#if legend}}<legend>{{legend}}</legend>{{/if}}{{{controls}}}</fieldset>'
+        , div                   : '<div{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{controls}}}</div>'
+        , label                 : '<label{{#if id}} id="{{id}}"{{/if}} class="control-label{{elClass}}" {{#if for}}for="{{for}}"{{/if}}>{{label}}</label>'
+        , input                 : '<input{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each extras}} {{extraKey}}={{extraValue}}{{/each}} />'
+        , select                : '<select{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{#if startWith}}<option value="">{{#startWith}}- - -{{/startWith}}</option>{{/if}}{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>'
+        , button                : '<button{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}} class="{{elClass}}" type={{type}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{text}}</button>'
+        , pTag                  : '<p{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{text}}</p>'
+      });
     }
-  };
+  });
 
-  Forms.Templates.Helpers = {
+  //Template Helpers
+  _.extend(Forms.Templates.Helpers, {
     createTemplate : function(name, template){
       var _templates = Forms.Templates || {};
 
@@ -216,234 +260,117 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, Validation, ModelBinder){
     createPartial : function(name, partial){
       Handlebars.registerPartial(name, partial);
     }
-  };
+  });
 
-  Forms.Templates.Partials = {}; 
+  //Tempalte Partials
+  _.extend(Forms.Templates.Partials, {
+  });
 
-  Forms.Templates.Elements = {
+  //Template Elements
+  _.extend(Forms.Templates.Elements, {
+    //Objects
+    Buttons: {},
+    Inputs: {},
+    Helpers: {},
 
-    _defaults : function(control, controlId){
-      var _options = {};
-      _options.extras = [];
-      _options.elClass = control.elClass;
-      _options.name = controlId;
-      if(control.label){
-        _options.label = control.label;
+    //Functions
+    form : function(form, formName){
+      return this.Helpers.getDefaults(form, formName);
+    },
+
+    fieldset : function(fieldset, fieldsetName){
+      var tmplParams = this.Helpers.getDefaults(fieldset, fieldsetName);
+      if(fieldset.legend) { tmplParams.legend = fieldset.legend; }
+      return tmplParams;
+    },
+
+    div: function(div, divName){
+      return this.Helpers.getDefaults(div, divName);
+    },
+
+    input : function(input, inputName){
+      var tmplParams = this.Helpers.getDefaults(input, inputName);
+      tmplParams.type = input.subType || 'text';
+
+      if(Forms.Templates.Elements.Inputs[tmplParams.type]){
+        _.extend(tmplParams, Forms.Templates.Elements.Inputs[tmplParams.type](input));
       }
-      return _options;
+
+      return tmplParams;
     },
 
-    _getId : function(options, controlId, prefix) {
-      var _options = {};
-      _options.prefix = options.prefix || prefix;
-      
-       return _options.prefix + controlId[0].toUpperCase() + controlId.substring(1, controlId.length);
-    },
-
-    form : function(form, formId){
-      var _options = this._defaults(form, formId);
-
-      _options.prefix = 'frm';
-      _options.id = this._getId(_options, formId);
-
-      return _options;
-    },
-
-    fieldset : function(fieldset, fieldsetId){
-      var _options = this._defaults(fieldset, fieldsetId);
-
-      _options.prefix = 'fld';
-      _options.legend = fieldset.legend;
-      _options.id = this._getId(_options, fieldsetId);
-
-      return _options;
-    },
-
-    div: function(div, divId){
-      var _options = this._defaults(div, divId);
-
-      _options.prefix = 'dv';
-      _options.id = this._getId(_options, divId);
-
-      return _options;
-    },
-
-    input : function(input, inputId){
-      var _options = this._defaults(input, inputId);
-
-      _options.type = input.subType || 'text';
-
-      _options = Forms.Templates.Elements.Inputs[_options.type](_options, input);
-
-      _options.id = this._getId(_options, inputId);
-      return _options;
-    },
-
-    select : function(select, selectId, view){
-      var _options = this._defaults(select, selectId);
-
-      _options.prefix = 'dd';
-
-      if(select.startWith){
-        _options.startWith = select.startWith;
-      }
+    select : function(select, selectName){
+      var tmplParams = this.Helpers.getDefaults(select, selectName);
+      if(select.startWith){ tmplParams.startWith = select.startWith; }
 
       if (_.isArray(select.options)) {
-        _options.options = _.map(select.options, function(option) {
+        tmplParams.options = _.map(select.options, function(option) {
           return { value: option, label: option};
         });
       }
       else if (_.isObject(select.options)) {
-        _options.options = _.map(_.values(select.options.call()), function(option) {
+        tmplParams.options = _.map(_.values(select.options.call()), function(option) {
           return { value: option, label: option};
         });
       }
 
-      _options.id = this._getId(_options, selectId);
-
-      return _options;
+      return tmplParams;
     },
 
-    button : function(button, buttonId){
-      var _options = this._defaults(button, buttonId);
-
+    button : function(button, buttonName){
+      var tmplParams = this.Helpers.getDefaults(button, buttonName);
       button.subType = button.subType || 'button';
+      tmplParams.type = button.subType;
+      tmplParams.text = button.text;
+      tmplParams.name = button.value;
 
-      _options = Forms.Templates.Elements.Buttons[button.subType](_options, button);
-      _options.type = button.subType;
-      _options.text = button.text;
-      _options.extras.push({ extraKey : 'name', extraValue : button.value});
-      _options.id = this._getId(_options, buttonId);
-
-      return _options;
+      if(Forms.Templates.Elements.Buttons[tmplParams.type]){
+        _.extend(tmplParams, Forms.Templates.Elements.Buttons[tmplParams.type](button));
+      }
+      return tmplParams;
     }
-  };
-
-  Forms.Templates.Elements.Buttons = {
-    button : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'btn';
-      return _options;
-    },
-
-    submit : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'sbmt';
-      return _options;
-    },
-
-    reset : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rst';
-      return _options;
-    }
-  };
-
-  Forms.Templates.Elements.Inputs = {
-
-    text : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'txt';
-      return _options;
-    },
-
-    button : function(options, input){
-      var _options = {};
-      
-      $.extend(_options, options);
-
-      _options.prefix = 'btn';
-      _options.extras.push({ extraKey : 'value', extraValue : input.value});
-      return _options;
-    },
-
-    checkbox : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'chk';
-      return _options;
-    },
-
-    hidden : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'hdn';
-      return _options;
-    },
-
-    password : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'pwd';
-      return _options;
-    },
-
-    radio : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rdio';
-      return _options;
-    },
-
-    reset : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rst';
-      return _options;
-    },
-
-    submit : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'sbmt';
-      return _options;
-    }
-  };
-
-  Forms.Templates.registerTemplates({
-      form                  : '<form{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{fields}}}</form>'
-    , fieldset              : '<fieldset{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{#if legend}}<legend>{{legend}}</legend>{{/if}}{{{fields}}}</fieldset>'
-    , div                   : '<div{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{fields}}}</div>'
-    , controlGroup          : '<div{{#if id}} id="{{id}}"{{/if}} class="control-group{{elClass}}">{{{fields}}}</div>'
-    , controlGroup_controls : '<div class="controls{{elClass}}">{{{fields}}}</div>'
-    , label                 : '<label{{#if id}} id="{{id}}"{{/if}} class="control-label{{elClass}}" {{#if for}}for="{{for}}"{{/if}}>{{label}}</label>'
-    , input                 : '<input{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each extras}} {{extraKey}}={{extraValue}}{{/each}} />'
-    , select                : '<select{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{#if startWith}}<option value="">{{#startWith}}- - -{{/startWith}}</option>{{/if}}{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>'
-    , button                : '<button{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}} class="{{elClass}}" type={{type}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{text}}</button>'
-    , pTag                  : '<p{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{text}}</p>'
   });
 
-  Forms.Validation = Validation;
+  //Template Elements Helpers
+  _.extend(Forms.Templates.Elements.Helpers, {
+    getDefaults : function(control, controlName){
+      var tmplParams = {};
+      tmplParams.elClass = control.elClass;
+      if(control.label){
+        tmplParams.label = control.label;
+      }
+      return tmplParams;
+    }
+  });
 
-  Forms.Validation.Helpers = {
-    //findControl : function(control, controlId){
-      // if(control[controlId]) {}
-      //   return control[controlId];
-      // }
-      // if(control.controls){
-      //   return findControl;
-      // }
-    //}
-  };
+  //Template Elements Inputs
+  _.extend(Forms.Templates.Elements.Inputs, {
+    button : function(input){
+      var tmpParams = {};
+      tmpParams.value = input.value;
+      return tmpParams;
+    }
+  });
 
-  Forms.ModelBinder = ModelBinder;
+  //Template Elements Buttons
+  _.extend(Forms.Templates.Elements.Buttons, {
+    button : function(input){
+      var tmpParams = {};
+      tmpParams.name = input.value;
+      return tmpParams;
+    }
+  });
+
+  //To be extended ...
+  //Validation
+  _.extend(Forms.Validation, BBValidation, {
+  });
+
+  //ModelBinder
+  _.extend(Forms.ModelBinder, BBModelBinder, {
+  });
 
   return Forms;
-}($, _, Backbone, Handlebars, Validation, ModelBinder));
-
+}($, _, Backbone, Handlebars, Validation, StructuredModelBinder));
   return Backbone.Forms;
 }));

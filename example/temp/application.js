@@ -5972,467 +5972,217 @@ Backbone.Validation = (function(_){
 
   return Backbone.Validation;
 }));
-// Backbone.ModelBinder v0.1.6
-// (c) 2012 Bart Wood
+// Backbone.StructuredModelBinder v0.0.1
+// (c) 2012 Ben Aghaeipour
 // Distributed Under MIT License
 
 (function (factory) {
   if (typeof define === 'function' && define.amd) {
       // AMD. Register as an anonymous module.
-      define('backbone.modelbinder',['underscore', 'jquery', 'backbone'], factory);
+      define('backbone.structuredmodelbinder',['underscore', 'jquery', 'backbone'], factory);
   } else {
       // Browser globals
       factory(_, $, Backbone);
   }
 }(function(_, $, Backbone){
 
-  if(!Backbone){
-    throw 'Please include Backbone.js before Backbone.ModelBinder.js';
-  }
+  Backbone.StructuredModelBinder = (function(_, $, Backbone){
 
-  Backbone.ModelBinder = function(modelSetOptions){
-    _.bindAll(this);
-    this._modelSetOptions = modelSetOptions || {};
-  };
+    var ModelBinder = {};
 
-  // Current version of the library.
-  Backbone.ModelBinder.VERSION = '0.1.5';
-  Backbone.ModelBinder.Constants = {
-    ModelToView: 'ModelToView',
-    ViewToModel: 'ViewToModel'
-  };
+    ModelBinder = function(options){
+      this.defaultOptions = options || {};
+    };
 
-  _.extend(Backbone.ModelBinder.prototype, {
+    _.extend(ModelBinder, {
+      VERSION: '0.0.1',
+      Constants: {
+        ModelToView: 'ModelToView',
+        ViewToModel: 'ViewToModel'
+      },
 
-    bind:function (model, rootEl, attributeBindings, modelSetOptions) {
-      this.unbind();
+      //Objects
+      Helpers: {},
+      Model: {},
 
-      this._model = model;
-      this._rootEl = rootEl;
-      this._modelSetOptions = _.extend({}, this._modelSetOptions, modelSetOptions);
+      //Functions
+      bind: function(model, el, bindingsCollection, options){
+        this.unbind();
+        console.log('binding modelbinder');
+        
+        this._model = model;
+        this._rootEl = el;
+        this._options = _.extend({}, this._modelSetOptions, options);
+        this._bindingsCollection = bindingsCollection;
+        
+        if (!this._model) throw 'model must be specified';
+        if (!this._rootEl) throw 'el must be specified';
+        if (!bindingsCollection) throw 'bindingsCollection must be specified (for now)';
 
-      if (!this._model) throw 'model must be specified';
-      if (!this._rootEl) throw 'rootEl must be specified';
+        this._initUIBindings(uiCollection);
 
-      if(attributeBindings){
-        // Create a deep clone of the attribute bindings
-        this._attributeBindings = $.extend(true, {}, attributeBindings);
+        this._bindModelToView();
+        this._bindViewToModel();
 
-        this._initializeAttributeBindings();
-        this._initializeElBindings();
-      }
-      else {
-        this._initializeDefaultBindings();
-      }
+        _.extend(model, this.Model);
+      },
 
-      this._bindModelToView();
-      this._bindViewToModel();
-    },
+      //Unbind
+      unbind: function(){
+        console.log('unbinding modelbinder');
+        this._unbindModelToView();
+        this._unbindViewToModel();
 
-    unbind:function () {
-      this._unbindModelToView();
-      this._unbindViewToModel();
-
-      if(this._attributeBindings){
-        delete this._attributeBindings;
-        this._attributeBindings = undefined;
-      }
-    },
-
-    // Converts the input bindings, which might just be empty or strings, to binding objects
-    _initializeAttributeBindings:function () {
-        var attributeBindingKey, inputBinding, attributeBinding, elementBindingCount, elementBinding;
-
-        for (attributeBindingKey in this._attributeBindings) {
-            inputBinding = this._attributeBindings[attributeBindingKey];
-
-            if (_.isString(inputBinding)) {
-                attributeBinding = {elementBindings: [{selector: inputBinding}]};
-            }
-            else if (_.isArray(inputBinding)) {
-                attributeBinding = {elementBindings: inputBinding};
-            }
-            else if(_.isObject(inputBinding)){
-                attributeBinding = {elementBindings: [inputBinding]};
-            }
-            else {
-                throw 'Unsupported type passed to Model Binder ' + attributeBinding;
-            }
-
-            // Add a linkage from the element binding back to the attribute binding
-            for(elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++){
-                elementBinding = attributeBinding.elementBindings[elementBindingCount];
-                elementBinding.attributeBinding = attributeBinding;
-            }
-
-            attributeBinding.attributeName = attributeBindingKey;
-            this._attributeBindings[attributeBindingKey] = attributeBinding;
+        if(this._uiCollection){
+          delete this._uiCollection;
+          this._uiCollection = undefined;
         }
-    },
+      },
 
-    // If the bindings are not specified, the default binding is performed on the name attribute
-    _initializeDefaultBindings: function(){
-      var elCount, namedEls, namedEl, name, attributeBinding;
-      this._attributeBindings = {};
-      namedEls = $('[name]', this._rootEl);
-
-      for(elCount = 0; elCount < namedEls.length; elCount++){
-        namedEl = namedEls[elCount];
-        name = $(namedEl).attr('name');
-
-        // For elements like radio buttons we only want a single attribute binding with possibly multiple element bindings
-        if(!this._attributeBindings[name]){
-          attributeBinding =  {attributeName: name};
-          attributeBinding.elementBindings = [{attributeBinding: attributeBinding, boundEls: [namedEl]}];
-          this._attributeBindings[name] = attributeBinding;
-        }
-        else{
-          this._attributeBindings[name].elementBindings.push({attributeBinding: this._attributeBindings[name], boundEls: [namedEl]});
-        }
-      }
-    },
-
-    _initializeElBindings:function () {
-        var bindingKey, attributeBinding, bindingCount, elementBinding, foundEls, elCount, el;
-        for (bindingKey in this._attributeBindings) {
-            attributeBinding = this._attributeBindings[bindingKey];
-
-            for (bindingCount = 0; bindingCount < attributeBinding.elementBindings.length; bindingCount++) {
-                elementBinding = attributeBinding.elementBindings[bindingCount];
-                if (elementBinding.selector === '') {
-                    foundEls = $(this._rootEl);
-                }
-                else {
-                    foundEls = $(elementBinding.selector, this._rootEl);
-                }
-
-                if (foundEls.length === 0) {
-                    throw 'Bad binding found. No elements returned for binding selector ' + elementBinding.selector;
-                }
-                else {
-                    elementBinding.boundEls = [];
-                    for (elCount = 0; elCount < foundEls.length; elCount++) {
-                        el = foundEls[elCount];
-                        elementBinding.boundEls.push(el);
-                    }
-                }
-            }
-        }
-    },
-
-    _bindModelToView: function () {
+      _bindModelToView: function () {
         this._model.on('change', this._onModelChange, this);
 
-        this.copyModelAttributesToView();
-    },
+        //this.copyModelAttributesToView();
+      },
 
-    // attributesToCopy is an optional parameter - if empty, all attributes
-    // that are bound will be copied.  Otherwise, only attributeBindings specified
-    // in the attributesToCopy are copied.
-    copyModelAttributesToView: function(attributesToCopy){
-        var attributeName, attributeBinding;
-
-        for (attributeName in this._attributeBindings) {
-            if(attributesToCopy === undefined || _.indexOf(attributesToCopy, attributeName) !== -1){
-                attributeBinding = this._attributeBindings[attributeName];
-                this._copyModelToView(attributeBinding);
-            }
-        }
-    },
-
-    _unbindModelToView: function(){
+      _unbindModelToView: function(){
         if(this._model){
-            this._model.off('change', this._onModelChange);
-            this._model = undefined;
+          this._model.off('change', this._onModelChange);
+          this._model = undefined;
         }
-    },
+      },
 
-    _bindViewToModel:function () {
+      _bindViewToModel:function () {
         $(this._rootEl).delegate('', 'change', this._onElChanged);
         // The change event doesn't work properly for contenteditable elements - but blur does
         $(this._rootEl).delegate('[contenteditable]', 'blur', this._onElChanged);
-    },
+      },
 
-    _unbindViewToModel: function(){
+      _unbindViewToModel: function(){
         if(this._rootEl){
-            $(this._rootEl).undelegate('', 'change', this._onElChanged);
-            $(this._rootEl).undelegate('[contenteditable]', 'blur', this._onElChanged);
+          $(this._rootEl).undelegate('', 'change', this._onElChanged);
+          $(this._rootEl).undelegate('[contenteditable]', 'blur', this._onElChanged);
         }
-    },
+      },
 
-    _onElChanged:function (event) {
-        var el, elBindings, elBindingCount, elBinding;
+      _initUIBindings: function(uiCollection){
+        var _model, _bindings;
+      },
 
-        el = $(event.target)[0];
-        elBindings = this._getElBindings(el);
+      _deepUIBindings: function(){
 
-        for(elBindingCount = 0; elBindingCount < elBindings.length; elBindingCount++){
-            elBinding = elBindings[elBindingCount];
-            if (this._isBindingUserEditable(elBinding)) {
-                this._copyViewToModel(elBinding, el);
-            }
-        }
-    },
+      },
 
-    _isBindingUserEditable: function(elBinding){
-        return elBinding.elAttribute === undefined ||
-            elBinding.elAttribute === 'text' ||
-            elBinding.elAttribute === 'html';
-    },
+      _onModelChange: function(){
+        // stub
+      },
 
-    _getElBindings:function (findEl) {
-        var attributeName, attributeBinding, elementBindingCount, elementBinding, boundElCount, boundEl;
-        var elBindings = [];
-
-        for (attributeName in this._attributeBindings) {
-            attributeBinding = this._attributeBindings[attributeName];
-
-            for (elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++) {
-                elementBinding = attributeBinding.elementBindings[elementBindingCount];
-
-                for (boundElCount = 0; boundElCount < elementBinding.boundEls.length; boundElCount++) {
-                    boundEl = elementBinding.boundEls[boundElCount];
-
-                    if (boundEl === findEl) {
-                        elBindings.push(elementBinding);
-                    }
-                }
-            }
-        }
-
-        return elBindings;
-    },
-
-    _onModelChange:function () {
-        var changedAttribute, attributeBinding;
-
-        for (changedAttribute in this._model.changedAttributes()) {
-            attributeBinding = this._attributeBindings[changedAttribute];
-
-            if (attributeBinding) {
-                this._copyModelToView(attributeBinding);
-            }
-        }
-    },
-
-    _copyModelToView:function (attributeBinding) {
-        var elementBindingCount, elementBinding, boundElCount, boundEl, value, convertedValue;
-
-        value = this._model.get(attributeBinding.attributeName);
-
-        for (elementBindingCount = 0; elementBindingCount < attributeBinding.elementBindings.length; elementBindingCount++) {
-            elementBinding = attributeBinding.elementBindings[elementBindingCount];
-
-            for (boundElCount = 0; boundElCount < elementBinding.boundEls.length; boundElCount++) {
-                boundEl = elementBinding.boundEls[boundElCount];
-
-                if(!boundEl._isSetting){
-                    convertedValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, value);
-                    this._setEl($(boundEl), elementBinding, convertedValue);
-                }
-            }
-        }
-    },
-
-    _setEl: function (el, elementBinding, convertedValue) {
-        if (elementBinding.elAttribute) {
-            this._setElAttribute(el, elementBinding, convertedValue);
-        }
-        else {
-            this._setElValue(el, convertedValue);
-        }
-    },
-
-    _setElAttribute:function (el, elementBinding, convertedValue) {
-        switch (elementBinding.elAttribute) {
-            case 'html':
-                el.html(convertedValue);
-                break;
-            case 'text':
-                el.text(convertedValue);
-                break;
-            case 'enabled':
-                el.attr('disabled', !convertedValue);
-                break;
-            case 'displayed':
-                el[convertedValue ? 'show' : 'hide']();
-                break;
-            case 'hidden':
-                el[convertedValue ? 'hide' : 'show']();
-                break;
-            case 'css':
-                el.css(elementBinding.cssAttribute, convertedValue);
-                break;
-            case 'class':
-                var previousValue = this._model.previous(elementBinding.attributeBinding.attributeName);
-                if(!_.isUndefined(previousValue)){
-                    previousValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, previousValue);
-                    el.removeClass(previousValue);
-                }
-
-                if(convertedValue){
-                    el.addClass(convertedValue);
-                }
-                break;
-            default:
-                el.attr(elementBinding.elAttribute, convertedValue);
-        }
-    },
-
-    _setElValue:function (el, convertedValue) {
-        if(el.attr('type')){
-            switch (el.attr('type')) {
-                case 'radio':
-                    if (el.val() === convertedValue) {
-                        el.attr('checked', 'checked');
-                    }
-                    break;
-                case 'checkbox':
-                    if (convertedValue) {
-                        el.attr('checked', 'checked');
-                    }
-                    else {
-                        el.removeAttr('checked');
-                    }
-                    break;
-                default:
-                    el.val(convertedValue);
-            }
-        }
-        else if(el.is('input') || el.is('select') || el.is('textarea')){
-            el.val(convertedValue);
-        }
-        else {
-            el.text(convertedValue);
-        }
-    },
-
-    _copyViewToModel: function (elementBinding, el) {
-        var value, convertedValue;
-
-        if (!el._isSetting) {
-
-            el._isSetting = true;
-            this._setModel(elementBinding, $(el));
-            el._isSetting = false;
-
-            if(elementBinding.converter){
-                value = this._model.get(elementBinding.attributeBinding.attributeName);
-                convertedValue = this._getConvertedValue(Backbone.ModelBinder.Constants.ModelToView, elementBinding, value);
-                this._setEl($(el), elementBinding, convertedValue);
-            }
-        }
-    },
-
-    _getElValue: function(elementBinding, el){
-        switch (el.attr('type')) {
-            case 'checkbox':
-                return el.prop('checked') ? true : false;
-            default:
-                if(el.attr('contenteditable') !== undefined){
-                    return el.html();
-                }
-                else {
-                    return el.val();
-                }
-        }
-    },
-
-    _setModel: function (elementBinding, el) {
-      var data = {};
-      var elVal = this._getElValue(elementBinding, el);
-      elVal = this._getConvertedValue(Backbone.ModelBinder.Constants.ViewToModel, elementBinding, elVal);
-      data[elementBinding.attributeBinding.attributeName] = elVal;
-      var opts = _.extend({}, this._modelSetOptions, {changeSource: 'ModelBinder'});
-      this._model.set(data, opts);
-    },
-
-    _getConvertedValue: function (direction, elementBinding, value) {
-        if (elementBinding.converter) {
-            value = elementBinding.converter(direction, value, elementBinding.attributeBinding.attributeName, this._model);
-        }
-
-        return value;
-    }
-  });
-
-  Backbone.ModelBinder.CollectionConverter = function(collection){
-      this._collection = collection;
-
-      if(!this._collection){
-          throw 'Collection must be defined';
+      _onElChanged: function(){
+        // stub
       }
-      _.bindAll(this, 'convert');
-  };
 
-  _.extend(Backbone.ModelBinder.CollectionConverter.prototype, {
-      convert: function(direction, value){
-          if (direction === Backbone.ModelBinder.Constants.ModelToView) {
-              return value ? value.id : undefined;
+    });
+
+    _.extend(ModelBinder.Model, {
+
+      get: function(attr){
+        var attrs = attr.split('.');
+        if(attrs.length > 1){
+          return this.getDots(this.attributes, attrs);
+        }else{
+          return Backbone.Model.prototype.get.call(this, attr);
+        }
+      },
+
+      getDots: function(jsonModel, attrs){
+        var modelVal = jsonModel[attrs[0]];
+        if(modelVal && attrs.length > 1 && _.isObject(modelVal)){
+          attrs.splice(0, 1);
+          return this.getDots(modelVal, attrs);
+        }else{
+          return modelVal;
+        }
+      },
+
+      set: function(key, value, options){
+        console.log('key ' + key + ' value ' + value);
+        var attrs, that = this, returns = {};
+
+        // Handle both `"key", value` and `{key: value}` -style arguments.
+        if (_.isObject(key) || key == null) {
+          attrs = key;
+          options = value;
+        } else {
+          attrs = {};
+          attrs[key] = value;
+        }
+
+        _.each(attrs, function(attrValue, attrKey, kv){
+          if(_.isObject(attrValue)){
+            console.log('obj');
+            if(that.attributes[attrKey]){
+              returns[attrKey] = that.setObj(that.attributes, kv, '', options);
+            }else{
+              returns[attrKey] = 'undefined';
+            }
+          }else if(attrKey.indexOf('.') != -1){
+            console.log('dot');
+            that.setDot(that.attributes, attrKey.split('.'), attrValue, options);
+            returns[attrKey] = attrValue;
+          }else{
+            console.log('normal');
+            returns[attrKey] = Backbone.Model.prototype.set.call(that, kv, options);
           }
-          else {
-              return this._collection.get(value);
-          }
-      }
-  });
+        });
 
-  // A static helper function to create a default set of bindings that you can customize before calling the bind() function
-  // rootEl - where to find all of the bound elements
-  // attributeType - probably 'name' or 'id' in most cases
-  // converter(optional) - the default converter you want applied to all your bindings
-  // elAttribute(optional) - the default elAttribute you want applied to all your bindings
-  Backbone.ModelBinder.createDefaultBindings = function(rootEl, attributeType, converter, elAttribute){
-      var foundEls, elCount, foundEl, attributeName;
-      var bindings = {};
+        return returns;
+      },
 
-      foundEls = $('[' + attributeType + ']', rootEl);
+      /*So we can call from the view, 
+       / this.model.set('{ 
+       /  a: {
+       /   structured: {
+       /     model: "value"
+       /   }
+       /  }
+       / }
+      */ 
+      //Add options.force = create the model structure if not found
+      //Call changed event for any properties that have changed
+      setObj: function(jsonModel, attrs, dotPath, options){
+        var key = dots[0], modelVal = jsonModel[key];
 
-      for(elCount = 0; elCount < foundEls.length; elCount++){
-          foundEl = foundEls[elCount];
-          attributeName = $(foundEl).attr(attributeType);
+        if(modelVal && dots.length > 0 && _.isObject(modelVal)){
+          dots.splice(0, 1);
+          _.extend(jsonModel[key], this.setDot(modelVal, dots, value, options));
+        }else{
+          jsonModel[key] = value;
+        }
+        
+      },
 
-          if(!bindings[attributeName]){
-              var attributeBinding =  {selector: '[' + attributeType + '="' + attributeName + '"]'};
-              bindings[attributeName] = attributeBinding;
+      //So we can call from the view, this.model.set('a.structured.model', 'value', options)
+      //Add options.force = create the model structure if not found
+      //Call changed event for any properties that have changed
+      setDot: function(jsonModel, dots, value, options){
+        var key = dots[0], modelVal = jsonModel[key];
 
-              if(converter){
-                  bindings[attributeName].converter = converter;
-              }
-
-              if(elAttribute){
-                  bindings[attributeName].elAttribute = elAttribute;
-              }
-          }
-      }
-
-      return bindings;
-  };
-
-  // Helps you to combine 2 sets of bindings
-  Backbone.ModelBinder.combineBindings = function(destination, source){
-    _.each(source, function(value, key){
-      var elementBinding = {selector: value.selector};
-
-      if(value.converter){
-        elementBinding.converter = value.converter;
-      }
-
-      if(value.elAttribute){
-        elementBinding.elAttribute = value.elAttribute;
-      }
-
-      if(!destination[key]){
-        destination[key] = elementBinding;
-      }
-      else {
-        destination[key] = [destination[key], elementBinding];
+        if(modelVal && dots.length > 0 && _.isObject(modelVal)){
+          dots.splice(0, 1);
+          _.extend(jsonModel[key], this.setDot(modelVal, dots, value, options));
+        }else{
+          jsonModel[key] = value;
+        }
       }
     });
-  };
 
-  return Backbone.ModelBinder;
+    return ModelBinder;
+  }(_, $, Backbone));
+
+  return Backbone.StructuredModelBinder;
 
 }));
+
 // Backbone.Forms v0.1.0
 //
 // Copyright (c) 2012 Benjamin Aghaeipour
@@ -6442,202 +6192,246 @@ Backbone.Validation = (function(_){
 
 (function (factory) {
   if (typeof exports === 'object') {
-    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.modelbinder'));
+    module.exports = factory(require('jquery'), require('underscore'), require('backbone'), require('handlebars'), require('backbone.validation'), require('backbone.structuredmodelbinder'));
   } else if (typeof define === 'function' && define.amd) {
-    define('backbone.forms',['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.modelbinder'], factory);
+    define('backbone.forms',['jquery', 'underscore', 'backbone', 'handlebars', 'backbone.validation', 'backbone.structuredmodelbinder'], factory);
   }
-}(function ($, _, Backbone, Handlebars, Validation, ModelBinder) {
+}(function ($, _, Backbone, Handlebars, Validation, StructuredModelBinder) {
 /*jshint debug:true */
 
-// Form model binding and validation.
+// Forms model binding and validation.
+Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBinder){
 
-Backbone.Forms = (function($, _, Backbone, Handlebars, Validation, ModelBinder){
+  var Forms = {};
   
-
-  var Forms, defaultValidation, defaultModelBinder, defaultTemplates, defaultOptions = {
-    forceUpdate: true,
-    selector: 'name',
-    labelFormatter: 'sentenceCase',
-    valid: function(view, attr, selector){
-      console.log('valid');
-    },
-    invalid: function(view, attr, error, selector){
-      console.log('not valid');
-    }
+  //Forms
+  Forms = function(options){
+    this.defaultOptions = options || {};
   };
+  _.extend(Forms, {
+    //Objects
+    Helpers: {},
+    Templates: {},
+    Validation: {},
+    ModelBinder: {},
+    
+    //Functions
+    build: function(view, model, options){
 
-  Forms = (function(){
+      var that = this
+        , events = {}
+        , compiledForm
+        , forms
+      ;
 
-    //Public functions
-    var bindModel, unbindModel, eventsCollection, uiCollection, validationCollection, bindingsCollection,
-    //Private functions
-    _getForms, _getControls, _getEvents, _getValidation, _modelBinder, _getinput;
+      view = view || this._view;
+      model = model || this._model;
+      options = options || this._options;
+      forms = view.forms || {};
 
-    _getForms = function(view, model, options){
-
-      var events = {}, compiledForm, forms = view.forms ? view.forms || {} : {};
-      eventsCollection = {};
-      validationCollection ={};
-      uiCollection = {};
-      bindingsCollection = {};
-      // console.log(Forms.Templates.form);
-      // compiledForm = Forms.Templates.compile(Forms.Templates.form);
-      // console.log(compiledForm({formfields : 'hi'}));
-
-      _.each(forms, function(form, formId){
-        //var formModel, formView;
-        var formView, options;
- 
-        options = Forms.Templates.Elements.form(form, formId);
-
-        bindingsCollection[formId] = {
-          selector: options.id,
-          bindings: {}
-        };
+      _.each(forms, function(form, formName){
+        var tmplParams = Forms.Templates.Elements.form(form, formName);
+        tmplParams.id = formName;
 
         if(form.controls){
-          options.fields = _getControls(form.controls, view, bindingsCollection[formId], form);
+          that._addBindingsCollection('#' + tmplParams.id, [formName], false);
+          tmplParams.controls = that._getControls(form.controls, [formName]);
         }
-
-        formView = Forms.Templates.form(options);
 
         //Get events
-        if(form.events){
-          _getEvents(options.id, form.events);
-        }
+        that._getEvents(form, formName);
 
-        $.extend(view.model, {validation : validationCollection});
-
+        $.extend(view.model, {validation : that._validationCollection});
+        
         view.on('render', function() {
 
-          $(view.el).find('#' + formId + '_container').append(formView);
-          //Events can only be bound when template has been rendered
+          $(view.el).find('#' + formName + '_container').append(Forms.Templates.form(tmplParams));
 
-          view.delegateEvents(eventsCollection);
-          _modelBinder.bind(view.model, view.el, uiCollection);
+          //Events can only be bound when template has been rendered
+          view.delegateEvents(that._eventsCollection);
+
+          Forms.ModelBinder.bind(view.model, view.el, that._bindingsCollection);
+          debugger;
         });
       });
-    };
+    },
+    
+    _addBindingsCollection: function(selector, objPath, ignore){
+      var objPathClone = objPath.slice(0), obj = this.Helpers.getPath(this._bindingsCollection, objPathClone);
+      _.extend(obj, { selector: selector, bindings: {}, ignore: ignore || false});
+    },
 
-    _getControls = function(controls, view, bindings, parentControl){
-      var html = "", events, options, controlView, obj;
+    _addBindingsValue: function(selector, value, objPath, ignore){
+      var objPathClone = objPath.slice(0), obj = this.Helpers.getPath(this._bindingsCollection, objPathClone);
+      _.extend(obj, { selector: selector, value: value, ignore: ignore || false});
+    },
 
-      _.each(controls, function(control, controlId){
-        obj = {};
-        controlView = null;
+    _getControls: function(controls, parents){
+      var that = this
+        , view = this._view
+        , html = ""
+      ;
+
+      _.each(controls, function(control, controlName){
+        var controlView
+          , tmplParams
+          , _parents =  parents.slice(0)
+        ;
 
         if(Forms.Templates[control.type]){
           console.log('adding ' + control.type);
 
-          options = Forms.Templates.Elements[control.type](control, controlId, view);
+          tmplParams = Forms.Templates.Elements[control.type](control, controlName);
+          tmplParams.id = that.Helpers.underscoreArray(_parents) + controlName;
 
-          if(control.multiple){
-            debugger;
-          }
+          _parents.push(controlName);
 
           if(control.controls){
-            options.fields = _getControls(control.controls, view, control);
+            that._addBindingsCollection('#' + tmplParams.id, _parents, control.modelIgnore);
+            tmplParams.controls = that._getControls(control.controls, _parents);
+          }else{
+            that._addBindingsValue('#' + tmplParams.id, tmplParams.value, _parents, control.modelIgnore);
           }
 
-          if(control.events){
-            _getEvents(options.id, control.events);
-          }
+          that._getEvents(control, tmplParams.id);
+          that._getValidation(control, controlName, parents);
 
-          if(control.validation && !control.modelIgnore){
-            _getValidation(controlId, control.validation);
-          }
+          controlView = Forms.Templates[control.type](tmplParams);
 
-          if (options.inputs) {
-            _.each(options.inputs, function(input, inputId){
-              obj[controlId + '_' + input] = '#' + options.inputs[input].id;
-            });
-          }
-          else{
-            obj[controlId] = '#' + options.id;
-          }
-          
-          if(!control.modelIgnore){
-            $.extend(uiCollection, obj);
-          } 
-
-          controlView = Forms.Templates[control.type](options);
-        }
-
-        html += controlView;
+          html += controlView;
+        }        
       });
 
       return html;
-    };
+    },
 
-    _getEvents = function(controlId, events){
-      var obj;
-      _.each(events, function(methodToCall, eventAttribute){
-        obj = {};
-        obj[eventAttribute + ' #' + controlId] = methodToCall;
-        $.extend(eventsCollection, obj);
-      });
-    };
-
-    _getValidation = function(controlId, validation){
-      var obj = {};
-      obj[controlId] = validation;
-      $.extend(validationCollection, obj);
-    };
-
-    //Returns public methods of Backbone.Forms
-    return {
-
-      //Current version of the library
-      version: '0.1.0',
-      bind: function(view, options){
-
-        var model = view.model;
-
-        if(typeof model === 'undefined'){
-          throw 'Before you execute the binding your view must have a model\n';
-        }
-
-        if(!Forms.Templates.form){
-          throw "Templates not loaded";
-        }
-
-        this.unbind(view, model);
-        console.log('binding');
-
-        options = $.extend({}, defaultOptions, options);
-        _modelBinder = new Forms.ModelBinder();
-
-        _getForms(view, view.model, options);
-
-        defaultValidation = Forms.Validation;
-        defaultValidation.bind(view, options);
-      },
-
-      unbind: function(view, model){
-        console.log('unbinding');
+    _getEvents: function(control, controlName){
+      var that = this;
+      if(control.events){
+        _.each(control.events, function(methodToCall, eventAttribute){
+          var obj = {};
+          obj[eventAttribute + ' #' + controlName] = methodToCall;
+          _.extend(that._eventsCollection, obj);
+        });
       }
-    };
-  }());
+    },
 
-  Forms.Templates = {
-    registerTemplates : function(templates){
+    _getValidation: function(control, controlName, controlPath){
+      if(control.validation && !control.modelIgnore){
+        debugger;
+        var obj = {};
+        obj[controlName] = control.validation;
+        _.extend(this._validationCollection, obj);
+      }
+    },
+
+    init: function(){
+      console.log('initialise');
+      
+      //Adds the defaults templates to the BB.Forms
+      Forms.Templates.init(); 
+      
+      //Then checks they are there
+      if(!Forms.Templates.form){  
+        throw "Templates not loaded";
+      }
+    },
+
+    bind: function(view, options){
+      var model = view.model;
+
+      if(typeof model === 'undefined'){
+        throw 'Before you execute the binding your view must have a model\n';
+      }
+
+      this.unbind();
+      //Save view, model, and options on BB.Forms
+      this._view = view;
+      this._model = model;
+      this._options = options;
+
+      //Create BB.Forms collections 
+      this._eventsCollection = {};
+      this._validationCollection ={};
+      this._bindingsCollection = {};
+
+      this.build();
+
+      //Bind the validation events to the model
+      this.Validation.bind(view, options);
+    },
+
+    unbind: function(){
+      //unbind using this._view and this._model
+      console.log('unbinding');
+    }
+  });
+
+  //Form Helpers
+  _.extend(Forms.Helpers, {
+    getPath: function(objectModel, dotAttrs){
+      var key = dotAttrs[0];
+      
+      if(objectModel[key] && dotAttrs.length > 1 && _.isObject(objectModel[key])){
+        dotAttrs.splice(0, 1);
+        return this.getPath(objectModel[key], dotAttrs);
+      }else if(!objectModel[key] && objectModel.bindings){
+        return this.getPath(objectModel.bindings, dotAttrs);
+      }else if(!objectModel[key]){
+        objectModel[key] = {};
+        return this.getPath(objectModel, dotAttrs);
+      }else{
+        return objectModel[key];
+      }
+    },
+    underscoreArray: function(array){
+      var underscores = "";
+      _.each(array, function(controlName){
+        underscores += controlName + '_';
+      });
+      return underscores;
+    }
+  });
+
+  //Templates
+  _.extend(Forms.Templates, {
+    //Objects
+    Helpers: {},
+    Partials: {},
+    Elements: {},
+
+    //Functions
+    registerTemplates: function(templates){
       _.each(templates, function(template, templateName){
         Forms.Templates.Helpers.createTemplate(templateName, template);
       });
     },
-    registerHelpers : function(helpers){
+    registerHelpers: function(helpers){
       _.each(helpers, function(helper, helperName){
         Forms.Templates.Helpers.createHelper(helperName, helper);
       });
     },
-    registerPartials : function(partials){
+    registerPartials: function(partials){
       _.each(partials, function(partial, partialName){
         Forms.Templates.Helpers.createPartial(partialName, partial);
       });
+    },
+    init: function(){
+      this.registerTemplates({
+          form                  : '<form{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{controls}}}</form>'
+        , fieldset              : '<fieldset{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{#if legend}}<legend>{{legend}}</legend>{{/if}}{{{controls}}}</fieldset>'
+        , div                   : '<div{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{controls}}}</div>'
+        , label                 : '<label{{#if id}} id="{{id}}"{{/if}} class="control-label{{elClass}}" {{#if for}}for="{{for}}"{{/if}}>{{label}}</label>'
+        , input                 : '<input{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each extras}} {{extraKey}}={{extraValue}}{{/each}} />'
+        , select                : '<select{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{#if startWith}}<option value="">{{#startWith}}- - -{{/startWith}}</option>{{/if}}{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>'
+        , button                : '<button{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}} class="{{elClass}}" type={{type}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{text}}</button>'
+        , pTag                  : '<p{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{text}}</p>'
+      });
     }
-  };
+  });
 
-  Forms.Templates.Helpers = {
+  //Template Helpers
+  _.extend(Forms.Templates.Helpers, {
     createTemplate : function(name, template){
       var _templates = Forms.Templates || {};
 
@@ -6651,235 +6445,118 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, Validation, ModelBinder){
     createPartial : function(name, partial){
       Handlebars.registerPartial(name, partial);
     }
-  };
+  });
 
-  Forms.Templates.Partials = {}; 
+  //Tempalte Partials
+  _.extend(Forms.Templates.Partials, {
+  });
 
-  Forms.Templates.Elements = {
+  //Template Elements
+  _.extend(Forms.Templates.Elements, {
+    //Objects
+    Buttons: {},
+    Inputs: {},
+    Helpers: {},
 
-    _defaults : function(control, controlId){
-      var _options = {};
-      _options.extras = [];
-      _options.elClass = control.elClass;
-      _options.name = controlId;
-      if(control.label){
-        _options.label = control.label;
+    //Functions
+    form : function(form, formName){
+      return this.Helpers.getDefaults(form, formName);
+    },
+
+    fieldset : function(fieldset, fieldsetName){
+      var tmplParams = this.Helpers.getDefaults(fieldset, fieldsetName);
+      if(fieldset.legend) { tmplParams.legend = fieldset.legend; }
+      return tmplParams;
+    },
+
+    div: function(div, divName){
+      return this.Helpers.getDefaults(div, divName);
+    },
+
+    input : function(input, inputName){
+      var tmplParams = this.Helpers.getDefaults(input, inputName);
+      tmplParams.type = input.subType || 'text';
+
+      if(Forms.Templates.Elements.Inputs[tmplParams.type]){
+        _.extend(tmplParams, Forms.Templates.Elements.Inputs[tmplParams.type](input));
       }
-      return _options;
+
+      return tmplParams;
     },
 
-    _getId : function(options, controlId, prefix) {
-      var _options = {};
-      _options.prefix = options.prefix || prefix;
-      
-       return _options.prefix + controlId[0].toUpperCase() + controlId.substring(1, controlId.length);
-    },
-
-    form : function(form, formId){
-      var _options = this._defaults(form, formId);
-
-      _options.prefix = 'frm';
-      _options.id = this._getId(_options, formId);
-
-      return _options;
-    },
-
-    fieldset : function(fieldset, fieldsetId){
-      var _options = this._defaults(fieldset, fieldsetId);
-
-      _options.prefix = 'fld';
-      _options.legend = fieldset.legend;
-      _options.id = this._getId(_options, fieldsetId);
-
-      return _options;
-    },
-
-    div: function(div, divId){
-      var _options = this._defaults(div, divId);
-
-      _options.prefix = 'dv';
-      _options.id = this._getId(_options, divId);
-
-      return _options;
-    },
-
-    input : function(input, inputId){
-      var _options = this._defaults(input, inputId);
-
-      _options.type = input.subType || 'text';
-
-      _options = Forms.Templates.Elements.Inputs[_options.type](_options, input);
-
-      _options.id = this._getId(_options, inputId);
-      return _options;
-    },
-
-    select : function(select, selectId, view){
-      var _options = this._defaults(select, selectId);
-
-      _options.prefix = 'dd';
-
-      if(select.startWith){
-        _options.startWith = select.startWith;
-      }
+    select : function(select, selectName){
+      var tmplParams = this.Helpers.getDefaults(select, selectName);
+      if(select.startWith){ tmplParams.startWith = select.startWith; }
 
       if (_.isArray(select.options)) {
-        _options.options = _.map(select.options, function(option) {
+        tmplParams.options = _.map(select.options, function(option) {
           return { value: option, label: option};
         });
       }
       else if (_.isObject(select.options)) {
-        _options.options = _.map(_.values(select.options.call()), function(option) {
+        tmplParams.options = _.map(_.values(select.options.call()), function(option) {
           return { value: option, label: option};
         });
       }
 
-      _options.id = this._getId(_options, selectId);
-
-      return _options;
+      return tmplParams;
     },
 
-    button : function(button, buttonId){
-      var _options = this._defaults(button, buttonId);
-
+    button : function(button, buttonName){
+      var tmplParams = this.Helpers.getDefaults(button, buttonName);
       button.subType = button.subType || 'button';
+      tmplParams.type = button.subType;
+      tmplParams.text = button.text;
+      tmplParams.name = button.value;
 
-      _options = Forms.Templates.Elements.Buttons[button.subType](_options, button);
-      _options.type = button.subType;
-      _options.text = button.text;
-      _options.extras.push({ extraKey : 'name', extraValue : button.value});
-      _options.id = this._getId(_options, buttonId);
-
-      return _options;
+      if(Forms.Templates.Elements.Buttons[tmplParams.type]){
+        _.extend(tmplParams, Forms.Templates.Elements.Buttons[tmplParams.type](button));
+      }
+      return tmplParams;
     }
-  };
-
-  Forms.Templates.Elements.Buttons = {
-    button : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'btn';
-      return _options;
-    },
-
-    submit : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'sbmt';
-      return _options;
-    },
-
-    reset : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rst';
-      return _options;
-    }
-  };
-
-  Forms.Templates.Elements.Inputs = {
-
-    text : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'txt';
-      return _options;
-    },
-
-    button : function(options, input){
-      var _options = {};
-      
-      $.extend(_options, options);
-
-      _options.prefix = 'btn';
-      _options.extras.push({ extraKey : 'value', extraValue : input.value});
-      return _options;
-    },
-
-    checkbox : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'chk';
-      return _options;
-    },
-
-    hidden : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'hdn';
-      return _options;
-    },
-
-    password : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'pwd';
-      return _options;
-    },
-
-    radio : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rdio';
-      return _options;
-    },
-
-    reset : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'rst';
-      return _options;
-    },
-
-    submit : function(options, input){
-      var _options = {};
-
-      $.extend(_options, options);
-      _options.prefix = 'sbmt';
-      return _options;
-    }
-  };
-
-  Forms.Templates.registerTemplates({
-      form                  : '<form{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{fields}}}</form>'
-    , fieldset              : '<fieldset{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{#if legend}}<legend>{{legend}}</legend>{{/if}}{{{fields}}}</fieldset>'
-    , div                   : '<div{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{{fields}}}</div>'
-    , controlGroup          : '<div{{#if id}} id="{{id}}"{{/if}} class="control-group{{elClass}}">{{{fields}}}</div>'
-    , controlGroup_controls : '<div class="controls{{elClass}}">{{{fields}}}</div>'
-    , label                 : '<label{{#if id}} id="{{id}}"{{/if}} class="control-label{{elClass}}" {{#if for}}for="{{for}}"{{/if}}>{{label}}</label>'
-    , input                 : '<input{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each extras}} {{extraKey}}={{extraValue}}{{/each}} />'
-    , select                : '<select{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{#if startWith}}<option value="">{{#startWith}}- - -{{/startWith}}</option>{{/if}}{{#each options}}<option value="{{value}}">{{label}}</option>{{/each}}</select>'
-    , button                : '<button{{#if id}} id="{{id}}"{{/if}}{{#if name}}name={{name}}{{/if}} class="{{elClass}}" type={{type}}{{#each extras}} {{extraKey}}={{extraValue}}{{/each}}>{{text}}</button>'
-    , pTag                  : '<p{{#if id}} id="{{id}}"{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}}>{{text}}</p>'
   });
 
-  Forms.Validation = Validation;
+  //Template Elements Helpers
+  _.extend(Forms.Templates.Elements.Helpers, {
+    getDefaults : function(control, controlName){
+      var tmplParams = {};
+      tmplParams.elClass = control.elClass;
+      if(control.label){
+        tmplParams.label = control.label;
+      }
+      return tmplParams;
+    }
+  });
 
-  Forms.Validation.Helpers = {
-    //findControl : function(control, controlId){
-      // if(control[controlId]) {}
-      //   return control[controlId];
-      // }
-      // if(control.controls){
-      //   return findControl;
-      // }
-    //}
-  };
+  //Template Elements Inputs
+  _.extend(Forms.Templates.Elements.Inputs, {
+    button : function(input){
+      var tmpParams = {};
+      tmpParams.value = input.value;
+      return tmpParams;
+    }
+  });
 
-  Forms.ModelBinder = ModelBinder;
+  //Template Elements Buttons
+  _.extend(Forms.Templates.Elements.Buttons, {
+    button : function(input){
+      var tmpParams = {};
+      tmpParams.name = input.value;
+      return tmpParams;
+    }
+  });
+
+  //To be extended ...
+  //Validation
+  _.extend(Forms.Validation, BBValidation, {
+  });
+
+  //ModelBinder
+  _.extend(Forms.ModelBinder, BBModelBinder, {
+  });
 
   return Forms;
-}($, _, Backbone, Handlebars, Validation, ModelBinder));
-
+}($, _, Backbone, Handlebars, Validation, StructuredModelBinder));
   return Backbone.Forms;
 }));
 
@@ -10457,6 +10134,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
         controls: {
           aDiv: {
             type: 'div',
+            modelIgnore: true,
             controls: {
               personal: {
                 type: 'fieldset',
@@ -10474,26 +10152,27 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
                       msg: "ERRROR"
                     }
                   },
-                  timeatbank: {
-                    type: 'doubleInput',
-                    label: "Time at bank",
-                    inputs: {
-                      years: {
-                        addOn: 'yrs',
-                        elClass: 'input-tiny',
-                        placeholder: 0,
-                        type: 'text'
-                      },
-                      months: {
-                        addOn: 'mths',
-                        elClass: 'input-tiny',
-                        placeholder: 0,
-                        type: 'text'
-                      }
-                    }
-                  },
+                  // timeatbank: {
+                  //   type: 'doubleInput',
+                  //   label: "Time at bank",
+                  //   inputs: {
+                  //     years: {
+                  //       addOn: 'yrs',
+                  //       elClass: 'input-tiny',
+                  //       placeholder: 0,
+                  //       type: 'text'
+                  //     },
+                  //     months: {
+                  //       addOn: 'mths',
+                  //       elClass: 'input-tiny',
+                  //       placeholder: 0,
+                  //       type: 'text'
+                  //     }
+                  //   }
+                  // },
                   title: {
                     type: 'select',
+                    label: 'Title',
                     options: function() {return PersonalDataOptions.Titles;},
                     startWith: '- - -',
                     events: {
@@ -10524,7 +10203,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
      * @return  _void_
      */
     initialize: function() {
-      console.log('initialize');
+      Forms.init();
 
       $.extend(Forms.Templates.Elements.Inputs, {
         date: function(options, input){
@@ -10537,23 +10216,23 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
       });
 
       $.extend(Forms.Templates.Elements, {
-        doubleInput : function(double, doubleId){
-          var that = this, _options = this._defaults(double, doubleId);
-          _options.prefix = 'txt';
-          _options.inputs = [];
+        // doubleInput : function(double, doubleId){
+        //   var that = this, _options = this.Helper.getDefaults(double, doubleId);
 
-          _.each(double.inputs, function(input, inputId){
+        //   _options.inputs = [];
 
-            _options.inputs[inputId] = input;
-            _options.inputs[inputId].id = that._getId(_options, inputId, 'txt');
-            _options.inputs.push(inputId);
-          });
-          return _options;
-        }
+        //   _.each(double.inputs, function(input, inputId){
+
+        //     _options.inputs[inputId] = input;
+        //     _options.inputs[inputId].id = that._getId(_options, inputId, 'txt');
+        //     _options.inputs.push(inputId);
+        //   });
+        //   return _options;
+        // }
       });
 
       Forms.Templates.registerPartials({
-        tb_form:        '<form{{#if id}} id="{{id}}"{{/if}} class="form-horizontal{{elClass}}">{{{fields}}}</form>',
+        tb_form:        '<form{{#if id}} id="{{id}}"{{/if}} class="form-horizontal{{elClass}}">{{{controls}}}</form>',
         tb_input:       '<div{{#if id}} id="{{id}}_control-group"{{/if}} class="control-group">\
                            {{#if label}}<label{{#if id}} id="{{id}}_label"{{/if}} class="control-label" {{#if id}}for="{{id}}"{{/if}}>{{label}}</label>{{/if}}\
                            <div class="controls">\
@@ -10595,6 +10274,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
       });
 
       Forms.bind(this, {forceUpdate: true});
+
     },
 
     onRender: function(){
@@ -10610,7 +10290,8 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
     },
 
     validator: function(e){
-      this.model.validate();      
+      debugger;
+      this.model.validate();
       console.log(this.model.isValid());
     }
   });
@@ -10628,6 +10309,14 @@ function ($, _, Backbone, Marionette, Forms, MarionetteHandlebars) {
   var TestModel;
 
   TestModel = Backbone.Model.extend({
+    defaults:{
+      name: 'Benjamin', 
+      age: '25',
+      attr:{
+        eyes: 'blue',
+        hair: 'brown'
+      }
+    }
   });
 
   /** Exposing the model publicly from the module. */
@@ -10850,20 +10539,20 @@ require.config({
 
   // Configuring libraries aliases /shortcuts/
   paths: {
-      'jquery'                : 'lib/jquery.min'
-    , 'underscore'            : 'lib/underscore'
-    , 'handlebars'            : 'lib/handlebars'
-    , 'backbone'              : 'lib/backbone'
-    , 'backbone.marionette'   : 'lib/backbone.marionette'
-    , 'backbone.forms'        : 'lib/backbone.forms'
-    , 'backbone.validation'   : '../../../../Backbone.Validation/src/backbone.validation'
-    , 'backbone.modelbinder'  : '../../../../Backbone.ModelBinder/src/backbone.modelbinder'
-    , 'marionetteHandlebars'  : 'lib/backbone.marionette.handlebars'
-    , 'hbs'                   : 'lib/hbs'
-    , 'templates'             : '../templates'
-    , 'PersonalDataOptions'   : 'constants/PersonalDataOptions'
-    , 'bbfTemplates'          : '../templates/backbone_forms'
-    , 'jquery.bootstrap'      : 'lib/bootstrap.min' // Twitter Bootstrap + RequireJS -- https://github.com/twitter/bootstrap/pull/534#issuecomment-6438820
+      'jquery'                          : 'lib/jquery.min'
+    , 'underscore'                      : 'lib/underscore'
+    , 'handlebars'                      : 'lib/handlebars'
+    , 'backbone'                        : 'lib/backbone'
+    , 'backbone.marionette'             : 'lib/backbone.marionette'
+    , 'backbone.forms'                  : 'lib/backbone.forms'
+    , 'backbone.validation'             : 'lib/backbone.validation'
+    , 'backbone.structuredmodelbinder'  : '../../../../Backbone.StructuredModelBinder/src/backbone.structuredmodelbinder'
+    , 'marionetteHandlebars'            : 'lib/backbone.marionette.handlebars'
+    , 'hbs'                             : 'lib/hbs'
+    , 'templates'                       : '../templates'
+    , 'PersonalDataOptions'             : 'constants/PersonalDataOptions'
+    , 'bbfTemplates'                    : '../templates/backbone_forms'
+    , 'jquery.bootstrap'                : 'lib/bootstrap.min' // Twitter Bootstrap + RequireJS -- https://github.com/twitter/bootstrap/pull/534#issuecomment-6438820
   },
 
   // configuring require.js handlebars plugin

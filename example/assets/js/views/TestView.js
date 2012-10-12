@@ -29,6 +29,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
         controls: {
           aDiv: {
             type: 'div',
+            modelIgnore: true,
             controls: {
               personal: {
                 type: 'fieldset',
@@ -46,26 +47,27 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
                       msg: "ERRROR"
                     }
                   },
-                  timeatbank: {
-                    type: 'doubleInput',
-                    label: "Time at bank",
-                    inputs: {
-                      years: {
-                        addOn: 'yrs',
-                        elClass: 'input-tiny',
-                        placeholder: 0,
-                        type: 'text'
-                      },
-                      months: {
-                        addOn: 'mths',
-                        elClass: 'input-tiny',
-                        placeholder: 0,
-                        type: 'text'
-                      }
-                    }
-                  },
+                  // timeatbank: {
+                  //   type: 'doubleInput',
+                  //   label: "Time at bank",
+                  //   inputs: {
+                  //     years: {
+                  //       addOn: 'yrs',
+                  //       elClass: 'input-tiny',
+                  //       placeholder: 0,
+                  //       type: 'text'
+                  //     },
+                  //     months: {
+                  //       addOn: 'mths',
+                  //       elClass: 'input-tiny',
+                  //       placeholder: 0,
+                  //       type: 'text'
+                  //     }
+                  //   }
+                  // },
                   title: {
                     type: 'select',
+                    label: 'Title',
                     options: function() {return PersonalDataOptions.Titles;},
                     startWith: '- - -',
                     events: {
@@ -96,7 +98,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
      * @return  _void_
      */
     initialize: function() {
-      console.log('initialize');
+      Forms.init();
 
       $.extend(Forms.Templates.Elements.Inputs, {
         date: function(options, input){
@@ -109,23 +111,23 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
       });
 
       $.extend(Forms.Templates.Elements, {
-        doubleInput : function(double, doubleId){
-          var that = this, _options = this._defaults(double, doubleId);
-          _options.prefix = 'txt';
-          _options.inputs = [];
+        // doubleInput : function(double, doubleId){
+        //   var that = this, _options = this.Helper.getDefaults(double, doubleId);
 
-          _.each(double.inputs, function(input, inputId){
+        //   _options.inputs = [];
 
-            _options.inputs[inputId] = input;
-            _options.inputs[inputId].id = that._getId(_options, inputId, 'txt');
-            _options.inputs.push(inputId);
-          });
-          return _options;
-        }
+        //   _.each(double.inputs, function(input, inputId){
+
+        //     _options.inputs[inputId] = input;
+        //     _options.inputs[inputId].id = that._getId(_options, inputId, 'txt');
+        //     _options.inputs.push(inputId);
+        //   });
+        //   return _options;
+        // }
       });
 
       Forms.Templates.registerPartials({
-        tb_form:        '<form{{#if id}} id="{{id}}"{{/if}} class="form-horizontal{{elClass}}">{{{fields}}}</form>',
+        tb_form:        '<form{{#if id}} id="{{id}}"{{/if}} class="form-horizontal{{elClass}}">{{{controls}}}</form>',
         tb_input:       '<div{{#if id}} id="{{id}}_control-group"{{/if}} class="control-group">\
                            {{#if label}}<label{{#if id}} id="{{id}}_label"{{/if}} class="control-label" {{#if id}}for="{{id}}"{{/if}}>{{label}}</label>{{/if}}\
                            <div class="controls">\
@@ -167,6 +169,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
       });
 
       Forms.bind(this, {forceUpdate: true});
+
     },
 
     onRender: function(){
@@ -182,7 +185,8 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
     },
 
     validator: function(e){
-      this.model.validate();      
+      debugger;
+      this.model.validate();
       console.log(this.model.isValid());
     }
   });

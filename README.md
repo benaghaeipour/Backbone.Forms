@@ -6,7 +6,7 @@ Custom forms with model binding and validation using twitter bootstrap layout in
 _(Coming soon)_
 
 ## Documentation
-_(Coming soon)_
+Use with Backbone.StructuredModelBinder
 
 ## Examples
 see /example

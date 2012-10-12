@@ -79,7 +79,7 @@ module.exports = function(grunt) {
     },
 
     watch: {
-        files: ['<config:lint.debug>', 'src/**/*.js', 'example/assets/js/**/*.js', '../Backbone.ModelBinder/src/*.js', '../Backbone.Validation/src/*.js']
+        files: ['<config:lint.debug>', 'src/**/*.js', 'example/assets/js/**/*.js', '../Backbone.StructuredModelBinder/src/*.js', '../Backbone.Validation/src/*.js']
       , tasks: 'app'
     },
 
