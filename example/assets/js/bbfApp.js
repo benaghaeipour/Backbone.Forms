@@ -11,8 +11,7 @@ function ($, _, Backbone, Marionette, Forms) {
   });
 
   bbfApp.on('start', function(options){
-
-    options = (options || {});
+    options = (options || {});  
 
     options.layout.bootstrap();
     options.router.bootstrap();

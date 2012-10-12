@@ -8,14 +8,14 @@ function ($, _, Backbone, Marionette, Forms, MarionetteHandlebars) {
   var TestModel;
 
   TestModel = Backbone.Model.extend({
-    defaults:{
-      name: 'Benjamin', 
-      age: '25',
-      attr:{
-        eyes: 'blue',
-        hair: 'brown'
-      }
-    }
+    // defaults:{
+    //   name: 'Benjamin', 
+    //   age: '25',
+    //   attr:{
+    //     eyes: 'blue',
+    //     hair: 'brown'
+    //   }
+    // }
   });
 
   /** Exposing the model publicly from the module. */

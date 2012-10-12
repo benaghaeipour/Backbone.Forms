@@ -30,11 +30,11 @@ module.exports = function(grunt) {
     // The concatenate task merges require.js/almond and other dependencies (templates) into the application code.
     concat: {
       backbone_forms: {
-          src: ['<banner>', 'src/backbone.forms.js', 'src/models/**/*.js', 'src/views/**/*.js']
+          src: ['<banner>', 'src/Backbone.Forms.js', 'src/models/**/*.js', 'src/views/**/*.js']
         , dest: 'dist/<%= pkg.name %>.js'
       },
       amd: {
-          src: ['<banner>', 'src/amd-intro.jsnip', 'src/backbone.forms.js','src/models/**/*.js', 'src/views/**/*.js', 'src/amd-outro.jsnip']
+          src: ['<banner>', 'src/amd-intro.jsnip', 'src/Backbone.Forms.js','src/models/**/*.js', 'src/views/**/*.js', 'src/amd-outro.jsnip']
         , dest: 'dist/backbone.forms.js'
       },
       app: {

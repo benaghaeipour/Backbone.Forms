@@ -6013,13 +6013,16 @@ Backbone.Validation = (function(_){
         this._model = model;
         this._rootEl = el;
         this._options = _.extend({}, this._modelSetOptions, options);
-        this._bindingsCollection = bindingsCollection;
-        
+
         if (!this._model) throw 'model must be specified';
         if (!this._rootEl) throw 'el must be specified';
         if (!bindingsCollection) throw 'bindingsCollection must be specified (for now)';
 
-        this._initUIBindings(uiCollection);
+        // if(uiCollection){
+        //   this._uiCollection = $.extend(true, {}, bindingsCollection);
+        debugger;
+        this._initUIBindings(bindingsCollection);
+        //}
 
         this._bindModelToView();
         this._bindViewToModel();
@@ -6318,7 +6321,6 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBind
 
     _getValidation: function(control, controlName, controlPath){
       if(control.validation && !control.modelIgnore){
-        debugger;
         var obj = {};
         obj[controlName] = control.validation;
         _.extend(this._validationCollection, obj);
@@ -6519,8 +6521,15 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBind
   //Template Elements Helpers
   _.extend(Forms.Templates.Elements.Helpers, {
     getDefaults : function(control, controlName){
-      var tmplParams = {};
+      var tmplParams = {}, htmlAttrs;
       tmplParams.elClass = control.elClass;
+      if(control.html){
+        htmlAttrs = [];
+        _.each(control.html, function(value, key){
+          htmlAttrs.push({ key: key, value: value});
+        });
+        tmplParams.attrs = htmlAttrs;
+      }
       if(control.label){
         tmplParams.label = control.label;
       }
@@ -6572,8 +6581,7 @@ function ($, _, Backbone, Marionette, Forms) {
   });
 
   bbfApp.on('start', function(options){
-
-    options = (options || {});
+    options = (options || {});  
 
     options.layout.bootstrap();
     options.router.bootstrap();
@@ -10144,6 +10152,9 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
                     type: 'input',
                     label: "Name",
                     subType: 'text',
+                    html: {
+                      "data-model": "72"
+                    },
                     events: {
                       'focus' : "focus1"
                     },
@@ -10172,7 +10183,6 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
                   // },
                   title: {
                     type: 'select',
-                    label: 'Title',
                     options: function() {return PersonalDataOptions.Titles;},
                     startWith: '- - -',
                     events: {
@@ -10236,7 +10246,7 @@ function ($, _, Backbone, Marionette, MarionetteHandlebars, Forms, bbfApp, Perso
         tb_input:       '<div{{#if id}} id="{{id}}_control-group"{{/if}} class="control-group">\
                            {{#if label}}<label{{#if id}} id="{{id}}_label"{{/if}} class="control-label" {{#if id}}for="{{id}}"{{/if}}>{{label}}</label>{{/if}}\
                            <div class="controls">\
-                             <input{{#if id}} id="{{id}}"{{/if}}{{#if name}} name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each extras}} {{extraKey}}={{extraValue}}{{/each}} />\
+                             <input{{#if id}} id="{{id}}"{{/if}}{{#if name}} name={{name}}{{/if}}{{#if elClass}} class="{{elClass}}"{{/if}} type="{{type}}" {{#each attrs}}{{key}}="{{value}}"{{/each}} />\
                            </div>\
                          </div>',
         tb_select:      '<div{{#if id}} id="{{id}}_control-group"{{/if}} class="control-group">\
@@ -10309,14 +10319,14 @@ function ($, _, Backbone, Marionette, Forms, MarionetteHandlebars) {
   var TestModel;
 
   TestModel = Backbone.Model.extend({
-    defaults:{
-      name: 'Benjamin', 
-      age: '25',
-      attr:{
-        eyes: 'blue',
-        hair: 'brown'
-      }
-    }
+    // defaults:{
+    //   name: 'Benjamin', 
+    //   age: '25',
+    //   attr:{
+    //     eyes: 'blue',
+    //     hair: 'brown'
+    //   }
+    // }
   });
 
   /** Exposing the model publicly from the module. */

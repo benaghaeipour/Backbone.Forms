@@ -133,7 +133,6 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBind
 
     _getValidation: function(control, controlName, controlPath){
       if(control.validation && !control.modelIgnore){
-        debugger;
         var obj = {};
         obj[controlName] = control.validation;
         _.extend(this._validationCollection, obj);
@@ -334,8 +333,15 @@ Backbone.Forms = (function($, _, Backbone, Handlebars, BBValidation, BBModelBind
   //Template Elements Helpers
   _.extend(Forms.Templates.Elements.Helpers, {
     getDefaults : function(control, controlName){
-      var tmplParams = {};
+      var tmplParams = {}, htmlAttrs;
       tmplParams.elClass = control.elClass;
+      if(control.html){
+        htmlAttrs = [];
+        _.each(control.html, function(value, key){
+          htmlAttrs.push({ key: key, value: value});
+        });
+        tmplParams.attrs = htmlAttrs;
+      }
       if(control.label){
         tmplParams.label = control.label;
       }
